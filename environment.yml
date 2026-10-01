@@ -1,0 +1,37 @@
+# Conda environment for the Laguerre project.
+#   conda env create -f environment.yml
+#   conda activate Lproj
+#   pip install -e Chakana_Geo/hanan -e Chakana_Geo/kayviz
+# Tested with Python 3.11 (numpy 2.4, scipy 1.16, libigl 2.6, splipy 1.10, jax 0.5).
+name: Lproj
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - pillow
+  - jupyterlab
+  - ipykernel
+  - ipywidgets
+  - pytest
+  - pip:
+      # geometry
+      - libigl
+      - pymeshlab
+      - triangle
+      # B-splines (L-conjugacy)
+      - splipy
+      - geomdl
+      - jax
+      - jaxlib
+      - jaxopt
+      # viewer (kayviz)
+      - fastapi
+      - uvicorn[standard]
+      - requests
+      - pydantic
+      - httpx
