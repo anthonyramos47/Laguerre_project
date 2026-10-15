@@ -1,0 +1,380 @@
+<title>K &gt; 0 Surface Catalogue</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;650&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: drafting-table catalogue. Detail sheet (viewer | parameter schedule) above a filterable plate grid. */
+:root {
+  --paper: #f5f7f8;
+  --sheet: #ffffff;
+  --ink: #1b2328;
+  --ink-2: #55636c;
+  --rule: #d7dee2;
+  --accent: #1f5f8b;
+  --accent-soft: #e3eef5;
+  --good: #2d7a4b;
+  --warn: #a2421f;
+  --viewer: #eef2f4;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12171a; --sheet: #1a2125; --ink: #e4eaed; --ink-2: #9aa8b0; --rule: #2e3940;
+    --accent: #7fb6dc; --accent-soft: #1f3341; --good: #74c495; --warn: #e48b66; --viewer: #151b1f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #12171a; --sheet: #1a2125; --ink: #e4eaed; --ink-2: #9aa8b0; --rule: #2e3940;
+  --accent: #7fb6dc; --accent-soft: #1f3341; --good: #74c495; --warn: #e48b66; --viewer: #151b1f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 22px; }
+h1, h2 { font-family: var(--f-display); font-weight: 650; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: 1.9rem; }
+h2 { font-size: 1.35rem; }
+.lede { color: var(--ink-2); max-width: 68ch; margin: 6px 0 0; }
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+.eyebrow { font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+
+/* detail sheet */
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+.viewer { position: relative; background: var(--viewer); border-right: 1px solid var(--rule); min-height: 380px; border-radius: 6px 0 0 6px; overflow: hidden; }
+.viewer > canvas { display: block; width: 100%; height: 100%; position: absolute; inset: 0; touch-action: none; }
+.legend { position: absolute; left: 12px; bottom: 12px; display: grid; gap: 4px; font-size: 0.75rem; color: var(--ink-2);
+  background: color-mix(in srgb, var(--sheet) 85%, transparent); padding: 8px 10px; border-radius: 4px; }
+.ramp { width: 160px; height: 8px; border-radius: 2px; }
+.legend .ends { display: flex; justify-content: space-between; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.hint { position: absolute; right: 12px; bottom: 12px; font-size: 0.72rem; color: var(--ink-2); }
+.info { padding: 20px 22px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-content: start; min-width: 0; }
+.info > * { min-width: 0; }
+.namerow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.namerow h2 { font-family: var(--f-mono); font-weight: 500; font-size: 1.3rem; overflow-wrap: anywhere; }
+button { font: inherit; cursor: pointer; }
+.copy { border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 4px; padding: 3px 10px; font-size: 0.82rem; }
+.copy:hover, .copy:focus-visible { background: var(--accent-soft); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
+.chip.good { color: var(--good); border-color: currentColor; }
+.chip.warn { color: var(--warn); border-color: currentColor; }
+.chip.arch { color: var(--accent); border-color: currentColor; }
+.note { margin: 0; color: var(--ink-2); }
+.call { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px; font-family: var(--f-mono); font-size: 0.85rem; overflow-x: auto; white-space: pre; margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 0; }
+.stats div { border-top: 1px solid var(--rule); padding-top: 6px; }
+.stats dt { font-size: 0.72rem; color: var(--ink-2); letter-spacing: 0.04em; text-transform: uppercase; }
+.stats dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.tablebox { overflow-x: auto; max-height: 340px; overflow-y: auto; border: 1px solid var(--rule); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { position: sticky; top: 0; background: var(--sheet); font-weight: 600; font-size: 0.75rem; color: var(--ink-2); letter-spacing: 0.04em; text-transform: uppercase; }
+td.p { font-family: var(--f-mono); white-space: nowrap; }
+td.v { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--accent); }
+td.d { color: var(--ink-2); min-width: 220px; }
+tr:last-child td { border-bottom: 0; }
+details summary { cursor: pointer; color: var(--ink-2); font-size: 0.85rem; }
+details pre { white-space: pre-wrap; font-family: var(--f-mono); font-size: 0.8rem; color: var(--ink-2); margin: 8px 0 0; }
+
+/* grid */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filters button { border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 999px; padding: 4px 12px; font-size: 0.85rem; }
+.filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.filters .n { font-family: var(--f-mono); font-size: 0.78em; opacity: 0.75; margin-left: 4px; }
+#search { border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 4px; padding: 5px 10px; font: inherit; font-size: 0.88rem; width: min(260px, 100%); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 0; text-align: left; color: var(--ink); display: grid; overflow: hidden; }
+.card:hover { border-color: var(--accent); }
+.card[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card img { width: 100%; aspect-ratio: 4 / 3; display: block; background: var(--viewer); max-width: 100%; }
+.card .meta { padding: 8px 10px 10px; display: grid; gap: 2px; min-width: 0; }
+.card .nm { font-family: var(--f-mono); font-size: 0.85rem; overflow-wrap: anywhere; }
+.card .kd { font-size: 0.75rem; color: var(--ink-2); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 6px; }
+.card .kd .bad { color: var(--warn); }
+.section-head { display: grid; gap: 4px; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 24px; color: var(--ink-2); font-size: 0.9rem; }
+.how p { margin: 0; }
+@media (max-width: 820px) {
+  .sheet { grid-template-columns: minmax(0, 1fr); }
+  .viewer { border-right: 0; border-bottom: 1px solid var(--rule); min-height: 300px; aspect-ratio: 4 / 3; border-radius: 6px 6px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Laguerre project · Lconjugacy/surface_examples.py</div>
+    <h1>K &gt; 0 Surface Catalogue</h1>
+    <p class="lede">Every example the notebook can fit, shown as its B-spline and coloured by Gaussian curvature.
+      Pick one, copy its name into <code>notebooks/bspline_examples.ipynb</code> and run that cell.</p>
+  </header>
+
+  <section class="sheet" aria-label="Selected example">
+    <div class="viewer" id="viewer">
+      <div class="legend" aria-hidden="true">
+        <span>Gaussian curvature K (log scale)</span>
+        <canvas class="ramp" id="ramp" width="160" height="8"></canvas>
+        <div class="ends"><span id="kmin"></span><span id="kmax"></span></div>
+      </div>
+      <div class="hint">drag to orbit · scroll to zoom</div>
+    </div>
+    <div class="info">
+      <div class="namerow">
+        <h2 id="d-name"></h2>
+        <button class="copy" id="copy-name" type="button">Copy name</button>
+      </div>
+      <div class="chips" id="d-chips"></div>
+      <p class="note" id="d-note"></p>
+      <div>
+        <div class="eyebrow">In the notebook</div>
+        <pre class="call" id="d-call"></pre>
+      </div>
+      <dl class="stats" id="d-stats"></dl>
+      <div>
+        <div class="eyebrow" id="d-ptitle">Parameters</div>
+        <div class="tablebox"><table>
+          <thead><tr><th>parameter</th><th>value</th><th>meaning</th></tr></thead>
+          <tbody id="d-params"></tbody>
+        </table></div>
+      </div>
+      <details><summary>Full docstring</summary><pre id="d-doc"></pre></details>
+    </div>
+  </section>
+
+  <div class="how">
+    <p><strong>Registered names</strong> (vaults, shells, parametric surfaces) are fitted with the values in the table.
+      Change any of them in the notebook with <code>params.update(...)</code>.</p>
+    <p><strong>Random families</strong> <code>shell_&lt;seed&gt;</code>, <code>roof_&lt;seed&gt;</code> and <code>loft_&lt;seed&gt;</code> are rebuilt from their seed,
+      so any seed works, not only the ones shown here. Roofs and lofts are K &gt; 0 for every seed; a random shell is cut to its K &gt; 0 band.</p>
+    <p><strong>u, v ranges</strong> are in the function's own parameters and are mapped to the B-spline's [0, 1]².
+      Tubes and shells are K &gt; 0 only on their outer band.</p>
+  </div>
+
+  <section class="section-head">
+    <div class="toolbar">
+      <div class="filters" role="group" aria-label="Filter examples" id="filters"></div>
+      <input id="search" type="search" placeholder="Search names" aria-label="Search names">
+    </div>
+  </section>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const DATA = /*__DATA__*/;
+
+const GROUPS = [
+  ["arch", "Architectural"],
+  ["random_shell", "Random shells"],
+  ["random_roof", "Random roofs & twists"],
+  ["random_loft", "Random lofts"],
+  ["param", "Parametric, K > 0"],
+  ["bad", "K ≤ 0 somewhere"],
+  ["all", "All"],
+];
+let filter = "arch", query = "", current = null;
+
+// viridis-like ramp
+const STOPS = [[0.267,0.005,0.329],[0.229,0.322,0.546],[0.128,0.567,0.551],[0.369,0.789,0.383],[0.993,0.906,0.144]];
+function ramp(t) {
+  t = Math.min(1, Math.max(0, t)) * (STOPS.length - 1);
+  const i = Math.min(STOPS.length - 2, Math.floor(t)), f = t - i;
+  return STOPS[i].map((a, k) => a + (STOPS[i + 1][k] - a) * f);
+}
+function fmt(x) {
+  if (!isFinite(x)) return "∞";
+  const a = Math.abs(x);
+  return (a !== 0 && (a < 1e-3 || a >= 1e4)) ? x.toExponential(2) : (+x.toPrecision(3)).toString();
+}
+
+function buildGeometry(e) {
+  const n = e.n, m = e.m, P = e.P, K = e.K;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+  // colour: log K normalised on this surface; K <= 0 drawn in warn red
+  const pos = K.filter(k => k > 0);
+  const lo = Math.log(Math.min(...pos)), hi = Math.log(Math.max(...pos));
+  const col = new Float32Array(K.length * 3);
+  K.forEach((k, i) => {
+    const c = k > 0 ? ramp(hi > lo ? (Math.log(k) - lo) / (hi - lo) : 0.5) : [0.85, 0.2, 0.15];
+    col.set(c, 3 * i);
+  });
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const idx = [];
+  for (let i = 0; i < n - 1; i++) for (let j = 0; j < m - 1; j++) {
+    const a = i * m + j, b = a + 1, c = a + m + 1, d = a + m;
+    idx.push(a, b, c, a, c, d);
+  }
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+function wireOf(e) {
+  const n = e.n, m = e.m, P = e.P, step = Math.max(1, Math.round((n - 1) / 12)), pts = [];
+  const push = (i, j) => pts.push(P[3 * (i * m + j)], P[3 * (i * m + j) + 1], P[3 * (i * m + j) + 2]);
+  for (let i = 0; i < n; i += step) for (let j = 0; j < m - 1; j++) { push(i, j); push(i, j + 1); }
+  const stepv = Math.max(1, Math.round((m - 1) / 12));
+  for (let j = 0; j < m; j += stepv) for (let i = 0; i < n - 1; i++) { push(i, j); push(i + 1, j); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+  return g;
+}
+function cssColor(name) { return new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#eef2f4"); }
+
+function makeScene(e) {
+  const scene = new THREE.Scene();
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.75, metalness: 0.0 });
+  scene.add(new THREE.Mesh(buildGeometry(e), mat));
+  const lines = new THREE.LineSegments(wireOf(e), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18 }));
+  scene.add(lines);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.75));
+  const d = new THREE.DirectionalLight(0xffffff, 0.55); d.position.set(3, -4, 5); scene.add(d);
+  return scene;
+}
+function placeCamera(cam) { cam.up.set(0, 0, 1); cam.position.set(3.2, -3.6, 2.4); cam.lookAt(0, 0, 0); }
+
+// ── thumbnails: one offscreen renderer, images cached per example
+let thumbR = null;
+function thumb(e) {
+  try {
+    if (!thumbR) {
+      thumbR = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      thumbR.setPixelRatio(1); thumbR.setSize(320, 240);
+    }
+    thumbR.setClearColor(cssColor("--viewer"));
+    const cam = new THREE.PerspectiveCamera(32, 4 / 3, 0.1, 100); placeCamera(cam);
+    const scene = makeScene(e);
+    thumbR.render(scene, cam);
+    const url = thumbR.domElement.toDataURL("image/png");
+    scene.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    return url;
+  } catch (err) { return ""; }
+}
+
+// ── main viewer
+const host = document.getElementById("viewer");
+let R, camera, controls, scene;
+function initViewer() {
+  R = new THREE.WebGLRenderer({ antialias: true });
+  R.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  host.prepend(R.domElement);
+  camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100); placeCamera(camera);
+  controls = new THREE.OrbitControls(camera, R.domElement);
+  controls.enableDamping = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const resize = () => {
+    const w = host.clientWidth, h = host.clientHeight;
+    R.setSize(w, h, false); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+  };
+  new ResizeObserver(resize).observe(host); resize();
+  (function loop() { controls.update(); if (scene) R.render(scene, camera); requestAnimationFrame(loop); })();
+}
+function setTheme() { if (R) R.setClearColor(cssColor("--viewer")); }
+
+function show(e) {
+  current = e;
+  if (scene) scene.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  scene = makeScene(e); setTheme();
+  placeCamera(camera); controls.target.set(0, 0, 0); controls.update();
+
+  document.getElementById("d-name").textContent = e.name;
+  document.getElementById("d-note").textContent = e.note || "";
+  const chips = document.getElementById("d-chips"); chips.replaceChildren();
+  const chip = (t, c) => { const s = document.createElement("span"); s.className = "chip " + (c || ""); s.textContent = t; chips.append(s); };
+  chip(e.kind_label);
+  if (e.arch && e.group === "registry") chip("architectural", "arch");
+  e.k_positive ? chip("K > 0 on the range", "good") : chip("K ≤ 0 somewhere", "warn");
+  chip(`${e.fit.n_u}×${e.fit.n_v} control points · degree ${e.fit.order - 1}`);
+
+  document.getElementById("d-call").textContent =
+    `NAME = "${e.name}"\nbsp = ex.fit(NAME)        # or edit: params = ex.get_params(NAME)`;
+  const st = document.getElementById("d-stats"); st.replaceChildren();
+  [["K min", fmt(e.Kmin)], ["K max", fmt(e.Kmax)], ["K max / K min", fmt(e.Kratio)], ["share K ≤ 0", (100 * e.Kneg).toFixed(1) + " %"]]
+    .forEach(([a, b]) => { const d = document.createElement("div"); d.innerHTML = `<dt></dt><dd></dd>`; d.firstChild.textContent = a; d.lastChild.textContent = b; st.append(d); });
+  document.getElementById("kmin").textContent = fmt(e.Kmin);
+  document.getElementById("kmax").textContent = fmt(e.Kmax);
+
+  document.getElementById("d-ptitle").textContent = `Parameters of ${e.func}`;
+  const tb = document.getElementById("d-params"); tb.replaceChildren();
+  e.params.forEach(([p, v, d]) => {
+    const tr = document.createElement("tr");
+    [[p, "p"], [v, "v"], [d, "d"]].forEach(([t, c]) => { const td = document.createElement("td"); td.className = c; td.textContent = t; tr.append(td); });
+    tb.append(tr);
+  });
+  document.getElementById("d-doc").textContent = e.doc;
+  document.querySelectorAll(".card").forEach(c => c.setAttribute("aria-current", c.dataset.name === e.name ? "true" : "false"));
+  try { history.replaceState(null, "", "#" + e.name); } catch (_) {}
+}
+
+// ── grid
+const thumbs = {};
+function inGroup(e, g) {
+  if (g === "all") return true;
+  if (g === "arch") return e.arch && e.group === "registry";
+  if (g.startsWith("random")) return e.group === g;
+  if (g === "param") return e.group === "registry" && e.k_positive && !e.arch;
+  if (g === "bad") return !e.k_positive;
+}
+function renderFilters() {
+  const box = document.getElementById("filters"); box.replaceChildren();
+  GROUPS.forEach(([g, label]) => {
+    const b = document.createElement("button"); b.type = "button";
+    b.setAttribute("aria-pressed", g === filter ? "true" : "false");
+    b.innerHTML = `<span></span><span class="n"></span>`;
+    b.firstChild.textContent = label; b.lastChild.textContent = DATA.filter(e => inGroup(e, g)).length;
+    b.onclick = () => { filter = g; renderFilters(); renderGrid(); };
+    box.append(b);
+  });
+}
+function renderGrid() {
+  const grid = document.getElementById("grid"); grid.replaceChildren();
+  DATA.filter(e => inGroup(e, filter) && e.name.includes(query)).forEach(e => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "card"; b.dataset.name = e.name;
+    b.setAttribute("aria-current", current && current.name === e.name ? "true" : "false");
+    if (!(e.name in thumbs)) thumbs[e.name] = thumb(e);
+    b.innerHTML = `<img alt=""><div class="meta"><span class="nm"></span><span class="kd"><span class="k1"></span><span class="k2"></span></span></div>`;
+    b.querySelector("img").src = thumbs[e.name];
+    b.querySelector("img").alt = e.name;
+    b.querySelector(".nm").textContent = e.name;
+    b.querySelector(".k1").textContent = e.kind_label;
+    const k2 = b.querySelector(".k2");
+    k2.textContent = e.k_positive ? `K ratio ${fmt(e.Kratio)}` : "K ≤ 0";
+    if (!e.k_positive) k2.className = "k2 bad";
+    b.onclick = () => { show(e); document.querySelector(".sheet").scrollIntoView({ behavior: "smooth", block: "start" }); };
+    grid.append(b);
+  });
+}
+
+document.getElementById("search").addEventListener("input", ev => { query = ev.target.value.trim(); renderGrid(); });
+document.getElementById("copy-name").addEventListener("click", ev => {
+  const btn = ev.currentTarget, name = current ? current.name : "";
+  const done = () => { btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy name"), 1400); };
+  navigator.clipboard.writeText(name).then(done).catch(() => {
+    const r = document.createRange(); r.selectNodeContents(document.getElementById("d-name"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selected, press Ctrl+C";
+  });
+});
+(function legend() {
+  const c = document.getElementById("ramp").getContext("2d");
+  for (let x = 0; x < 160; x++) { const [r, g, b] = ramp(x / 159); c.fillStyle = `rgb(${255 * r},${255 * g},${255 * b})`; c.fillRect(x, 0, 1, 8); }
+})();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", setTheme);
+new MutationObserver(setTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+initViewer();
+const start = DATA.find(e => e.name === location.hash.slice(1)) || DATA.find(e => e.arch) || DATA[0];
+if (start && !inGroup(start, filter)) filter = "all";
+renderFilters(); renderGrid(); show(start);
+</script>
