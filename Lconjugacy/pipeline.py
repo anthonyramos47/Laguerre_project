@@ -13,8 +13,8 @@ Stages
     2. L-conjugate field     initial_angles, init_directions
                              (setup_df_optimizer / run_df_optimizer: kept but not used for
                              the project — slow, and the radius write-back is unresolved)
-    3. Remeshing             save_cross_field, run_remesher (external), save_pre_remesh_state,
-                             load_remeshed_surfaces
+    3. Remeshing             save_cross_field, check_remesher, run_remesher (bin/quadRemesher),
+                             save_pre_remesh_state, load_remeshed_surfaces
     4. L-mesh                initialize_lmesh, setup_lmesh_optimizer, run_lmesh_optimizer,
                              finalize_lmesh, export_lmesh (ported to the swapped Lmesh:
                              spheres on top.vertices, planes on top.faces)
@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import os
 import pickle
+import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -68,8 +69,13 @@ from LMesh.Optimization.Tangential_Dist import Tangential_Dist
 HERE = Path(__file__).resolve().parent
 SURFACE_DIR = HERE.parent / "data" / "bsplines"
 OUT_DIR = HERE.parent / "notebooks" / "out" / "lconjugacy"   # git-ignored, local only
-# Quad remesher binary: set QUAD_REMESHER in the environment, or st.path_remesher in the notebook.
-DEFAULT_REMESHER = os.environ.get("QUAD_REMESHER", "/path/to/quadRemesher")
+# Quad remesher binary (Linux build, shipped in bin/). To use another one, any of:
+#   st.path_remesher = "/path/to/quadRemesher"     in the notebook (stage 3 cell),
+#   export QUAD_REMESHER=/path/to/quadRemesher     before starting Jupyter,
+#   edit REMESHER_CANDIDATES below.
+# resolve_remesher_bin() tries them in that order, then quadRemesher on $PATH.
+REMESHER_CANDIDATES = (HERE.parent / "bin" / "quadRemesher",)
+DEFAULT_REMESHER = ""
 
 # Weights of the original post-optimisation panel ("Run Optimization" / "Last Opt").
 # Keys are term names; "cv_*" were "cf_*" before the swap (sphere centres cf -> cv).
@@ -582,41 +588,112 @@ def save_cross_field(state) -> None:
     write_obj(os.path.join(state.save_path, "mesh.obj"), V, triangulate_quads(F))
 
 
-def run_remesher(state, integrated: bool = True) -> bool:
-    """Run the external quad remesher on the saved cross fields (t and lc).
+def resolve_remesher_bin(explicit: str | None = None) -> str:
+    """Path of the quadRemesher binary.
 
-    The remesher (quadRemesher) is interactive: after computing the parametrisation it
-    opens a viewer window, and the quad mesh is only written when you press **S** in
-    that window; the call returns when the window is closed. It runs twice — first for
-    the curve tangents (t), then for the rulings (lc).
-
-    Returns True when t_Remeshed.obj was produced; then the pre-remesh state is saved,
-    as in the original "Run Remesher" buttons.
+    Order: ``explicit`` (e.g. ``state.path_remesher``), $QUAD_REMESHER,
+    REMESHER_CANDIDATES (bin/quadRemesher of this repository), quadRemesher on $PATH.
     """
-    required = {"mesh.obj", "t_D1.dat", "t_D2.dat", "lc_D1.dat", "lc_D2.dat"}
+    if explicit:
+        if not os.path.isfile(explicit):
+            raise FileNotFoundError(f"remesher not found: {explicit}")
+        return explicit
+    env = os.environ.get("QUAD_REMESHER")
+    if env and os.path.isfile(env):
+        return env
+    for cand in REMESHER_CANDIDATES:
+        if cand.is_file():
+            return str(cand)
+    found = shutil.which("quadRemesher")
+    if found:
+        return found
+    tried = "\n  ".join([str(c) for c in REMESHER_CANDIDATES] + ["$QUAD_REMESHER", "$PATH"])
+    raise FileNotFoundError("quadRemesher binary not found. Tried:\n  " + tried +
+                            "\nSet st.path_remesher or export QUAD_REMESHER=/path/to/quadRemesher.")
+
+
+def check_remesher(binary: str | None = None) -> str:
+    """Resolve the binary and check it has the flag-based CLI (--field, --gradient, --batch)."""
+    binary = resolve_remesher_bin(binary)
+    if not os.access(binary, os.X_OK):
+        raise PermissionError(f"{binary} is not executable: chmod +x {binary}")
+    out = subprocess.run([binary, "--help"], capture_output=True, text=True)
+    help_text = out.stdout + out.stderr
+    missing = [f for f in ("--field", "--gradient", "--d1", "--batch") if f not in help_text]
+    if missing:
+        raise RuntimeError(f"{binary} does not support {', '.join(missing)}: it is an older "
+                           "build with the positional CLI; use bin/quadRemesher.")
+    print(f"Remesher OK: {binary}")
+    return binary
+
+
+def remesher_command(state, tag: str, gradient: float = 40.0, constraints: float = 1.0,
+                     extractor: str = "qex", batch: bool = True, binary: str | None = None) -> list:
+    """quadRemesher arguments for one field (``tag`` = "t" or "lc"), without running it.
+
+    The fields are per vertex of mesh.obj, written as libigl DMAT by save_cross_field.
+    The output is ``<save_path>/<tag>_Remeshed.obj``.
+    """
+    if not 0.0 < constraints <= 1.0:
+        raise ValueError(f"constraints must be in (0, 1], got {constraints}")
+    if gradient <= 0:
+        raise ValueError(f"gradient must be > 0, got {gradient}")
+    binary = resolve_remesher_bin(binary or state.path_remesher)
+    p = lambda f: str(Path(state.save_path, f).resolve())
+    cmd = [binary, p("mesh.obj"),
+           "--field", "data", "--d1", p(f"{tag}_D1.dat"), "--d2", p(f"{tag}_D2.dat"),
+           "--format", "dmat", "--defined_on", "vertices",
+           "--gradient", f"{gradient:g}", "--constraints", f"{constraints:g}",
+           "--extractor", extractor,
+           "--out", str(Path(state.save_path).resolve()), "--name", tag]
+    if batch:
+        cmd.append("--batch")
+    return cmd
+
+
+def run_remesher(state, gradient: float = 40.0, constraints: float = 1.0,
+                 extractor: str = "qex", batch: bool = True, fields=("t", "lc"),
+                 binary: str | None = None, verbose: bool = False) -> bool:
+    """Run quadRemesher on the saved cross fields: t (curve tangents) and lc (rulings).
+
+    gradient     integration gradient size; HIGHER = DENSER quads (relative to the
+                 bounding box).
+    constraints  fraction of the field kept as hard constraints, in (0, 1]; lower
+                 (~0.1) lets the solver smooth the field: fewer singularities.
+    extractor    "qex" (robust at seams and singularities) or "grid".
+    batch        True: headless, writes <tag>_Remeshed.obj and returns. False: opens the
+                 remesher's viewer per field ('+'/'-' gradient, 'R' preview, 'S' save) and
+                 waits until its window is closed.
+
+    Returns True when t_Remeshed.obj exists afterwards; then the pre-remesh state is
+    saved, as in the original "Run Remesher" buttons. The new quads are only written to
+    disk: load_remeshed_surfaces reads them into the state.
+    """
+    required = {"mesh.obj"} | {f"{tag}_D{k}.dat" for tag in fields for k in (1, 2)}
     missing = required - set(os.listdir(state.save_path)) if os.path.isdir(state.save_path) else required
     if missing:
         raise FileNotFoundError(f"run save_cross_field first; missing {sorted(missing)} in {state.save_path}")
-    if not os.path.isfile(state.path_remesher):
-        raise FileNotFoundError(f"remesher not found: {state.path_remesher} (set state.path_remesher)")
-    p = lambda f: str(Path(state.save_path, f).resolve())
-    # The remesher writes <output_folder><name>_Remeshed.obj with no separator in
-    # between, so the folder must end with "/" (without it the file lands next to the
-    # experiment folder as "<experiment>t_Remeshed.obj").
-    out_folder = str(Path(state.save_path).resolve()) + os.sep
-    mode = "integration" if integrated else "direct"
     labels = {"t": "L-conjugate curve tangents (t)", "lc": "rulings (lc)"}
-    for tag in ("t", "lc"):
-        print(f"Remesher window for the {labels[tag]}: press S to save the quad mesh, "
-              f"then close the window to continue.", flush=True)
-        cmd = [state.path_remesher, p("mesh.obj"), p(f"{tag}_D1.dat"), p(f"{tag}_D2.dat"),
-               out_folder, tag, mode]
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        saved = os.path.exists(os.path.join(state.save_path, f"{tag}_Remeshed.obj"))
-        print(f"  {tag}: {'saved ' + tag + '_Remeshed.obj' if saved else 'no quad mesh saved (S not pressed?)'}",
+    for tag in fields:
+        out_obj = os.path.join(state.save_path, f"{tag}_Remeshed.obj")
+        if os.path.exists(out_obj):
+            os.remove(out_obj)       # so a failed run is not mistaken for a result
+        cmd = remesher_command(state, tag, gradient=gradient, constraints=constraints,
+                               extractor=extractor, batch=batch, binary=binary)
+        if verbose:
+            print(" ".join(cmd))
+        if batch:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            rc, log = result.returncode, result.stdout + result.stderr
+        else:
+            print(f"Remesher window for the {labels[tag]}: press S to save the quad mesh, "
+                  f"then close the window to continue.", flush=True)
+            rc, log = subprocess.call(cmd), ""
+        saved = os.path.exists(out_obj)
+        print(f"  {tag}: {'saved ' + os.path.basename(out_obj) if saved else 'no quad mesh saved'}",
               flush=True)
-        if result.returncode != 0:
-            print("Remesher error:", result.stderr)
+        if rc != 0 or (verbose and log):
+            print(f"Remesher exit code {rc}:\n" + log.strip()[-2000:])
     ok = os.path.exists(os.path.join(state.save_path, "t_Remeshed.obj"))
     if ok:
         save_pre_remesh_state(state)
@@ -665,12 +742,18 @@ def load_pre_remesh_state(state) -> bool:
 
 
 def load_remeshed_surfaces(state) -> bool:
-    """Read t_Remeshed.obj / lc_Remeshed.obj, project them onto the reference surface."""
+    """Read t_Remeshed.obj / lc_Remeshed.obj, project them onto the reference surface.
+
+    Uses the reference as it is (computed by set_radius_function / set_reference, or
+    restored by load_pre_remesh_state); it is not recomputed here.
+    """
     t_path = os.path.join(state.save_path, "t_Remeshed.obj")
     lc_path = os.path.join(state.save_path, "lc_Remeshed.obj")
     if not (os.path.exists(t_path) and os.path.exists(lc_path)):
         return False
-    compute_reference_structures(state)
+    if state.reference is None:
+        raise RuntimeError("no reference: fit the radius function first (set_radius_function), "
+                           "or load_pre_remesh_state after a kernel restart")
     V_ref, F_ref, n_ref, Cv_ref = state.reference
 
     def project(V):

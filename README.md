@@ -23,6 +23,7 @@ included here as a git submodule.
 | `notebooks/` | the main entry points (below) |
 | `notebooks/out/` | results, one folder per project (`lmesh/`, `lconjugacy/`, `dupin/`); **git-ignored**, kept locally |
 | `data/` | example input meshes and B-spline surfaces used by the notebooks and tests (see `data/README.md`) |
+| `bin/` | `quadRemesher`, the quad remesher of the L-conjugacy stage 3 (Linux x86-64 build) |
 | `docs/` | notes on the Dupin cyclide propagation |
 | `tests/` | tests of the L-mesh code |
 
@@ -69,9 +70,17 @@ between notebooks, run `python -m kayviz` first.
 
 In `lconjugacy_lab`, set `SURFACE` in the first cell to `"nautilus"`, `"seashell"` (examples of
 the paper) or `"testSimpleOptimized"`; the (u, v) range, sampling, sphere radius and angle are
-then set to the values of the original runs. The B-splines are in `data/bsplines/`. Stages 0–2
-run on any machine; stage 3 calls an external quad remesher (set the environment variable `QUAD_REMESHER` to
-its path, or `st.path_remesher` in the notebook), which is not part of this repository yet.
+then set to the values of the original runs. The B-splines are in `data/bsplines/`; the other files
+there (K > 0 shells, lofts, tubes, ...) come from the catalogue in `../Bspline_lab`, and
+`bsplines_log.jsonl` records the example and parameters each one was made from. Stages 0–2
+run on any machine. Stage 3 runs the quad remesher shipped in `bin/quadRemesher` (a Linux x86-64
+build; it needs `libblas.so.3`, e.g. `sudo apt install libblas3`). To use another build, do one of:
+
+- set `st.path_remesher = "/path/to/quadRemesher"` in the stage 3 cell of the notebook,
+- `export QUAD_REMESHER=/path/to/quadRemesher` before starting Jupyter,
+- edit `REMESHER_CANDIDATES` at the top of `Lconjugacy/pipeline.py`.
+
+`pl.check_remesher()` prints which binary is used.
 
 ## Tests
 
