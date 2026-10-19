@@ -2297,7 +2297,8 @@ class Lmesh:
         Returns:
             dict with
                 "spherical_panels"     (V, F)  panels of the inner spheres
-                "conical_panels"       (V, F)  conical strips of the inner edges (quads)
+                "conical_panels"       (V, F)  conical strips of the edges between two
+                                               inner spheres (quads)
                 "flat_panels"          (V, F)  polygons of the inner planes
             only when such elements exist:
                 "degenerated_spheres"  V       centers of spheres with |r| < rad_tol (points)
@@ -2374,12 +2375,17 @@ class Lmesh:
                 Fs.append(F)
         out["spherical_panels"] = _merge_meshes_or_empty(Vs, Fs)
 
-        # Conical strips of the inner edges (+ collapsed ones as segments)
+        # Conical strips of the inner edges (+ collapsed ones as segments).
+        # Cones touching a boundary sphere are skipped, also when the other
+        # sphere is inner, as boundary spheres have no panel.
+        inn_sph_set = set(inn_sph)
         edge_s0, edge_s1 = self.top.edge_vertices()   # sphere pair per edge
         edge_p0, edge_p1 = self.top.edge_faces()      # plane on each side (-1 = boundary)
         Vs, Fs, segments = [], [], []
         for k in self.top.inner_edges():
             if edge_p0[k] == -1 or edge_p1[k] == -1:
+                continue
+            if edge_s0[k] not in inn_sph_set or edge_s1[k] not in inn_sph_set:
                 continue
             strip = self._cone_strip(edge_s0[k], edge_s1[k], hce)
             if strip is None:

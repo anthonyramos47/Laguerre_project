@@ -251,7 +251,7 @@ if __name__ == "__main__":
     """
     sys.path.insert(0, _ROOT)
 
-    from kayviz.webscope import script as ws
+    import kayviz as kv
     from hanan.geometry.mesh import Mesh
 
     V, F  = load_mesh(_SMALL)
@@ -259,14 +259,14 @@ if __name__ == "__main__":
     mesh.make_mesh(V, F)
     normals = mesh.vertex_normals
 
-    ws.init()
+    kv.init()
 
-    ws.register_surface_mesh("Base Mesh", V, F, color=(0.6, 0.6, 0.8), show_edges=True)
-    ws.register_point_cloud("Vertices",  V, color=(1.0, 0.4, 0.0), radius=0.015)
-    ws.add_scalar_quantity("Base Mesh", "height", V[:, 2])
-    ws.register_vector_field("Normals", V, normals, length=0.05, color=(0.2, 0.8, 0.4))
-    ws.register_surface_mesh("Sphere", *glyphs.sphere((0.5, 0.5, 0.5), 0.1), color=(0.8, 0.2, 0.2))
-    ws.register_curve_network("Ring", *glyphs.circle(V[0], normals[0], 0.05), color=(0.9, 0.5, 0.1))
+    kv.register_surface_mesh("Base Mesh", V, F, color=(0.6, 0.6, 0.8), show_edges=True)
+    kv.register_point_cloud("Vertices",  V, color=(1.0, 0.4, 0.0), radius=0.015)
+    kv.add_scalar_quantity("Base Mesh", "height", V[:, 2])
+    kv.register_vector_field("Normals", V, normals, length=0.05, color=(0.2, 0.8, 0.4))
+    kv.register_surface_mesh("Sphere", *glyphs.sphere((0.5, 0.5, 0.5), 0.1), color=(0.8, 0.2, 0.2))
+    kv.register_curve_network("Ring", *glyphs.circle(V[0], normals[0], 0.05), color=(0.9, 0.5, 0.1))
 
     print(f"Mesh: {V.shape[0]} vertices, {len(F)} faces")
-    ws.show()
+    kv.show()

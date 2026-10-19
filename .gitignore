@@ -232,3 +232,7 @@ CHECKLIST.md
 !/data/ph_results/ph_input_nautilus_ex2.out_d_p.off
 !/data/ph_results/triMeshTest.obj
 !/data/ph_results/hexMeshTest.obj
+# hl_mesh_lab inputs: PH hex meshes (<name>.out_d_p.obj) and their reference surfaces (<name>.obj)
+!/data/THlmeshes_input/PH/*.obj
+/data/THlmeshes_input/PH/*.out.obj
+/data/THlmeshes_input/PH/*.out_d_p2.obj
