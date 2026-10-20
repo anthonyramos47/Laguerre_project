@@ -220,6 +220,7 @@ CHECKLIST.md
 !/data/cone_mesh_0.obj
 !/data/cone_mesh_h.obj
 !/data/nautilus_lconj.obj
+!/data/dome.obj
 !/data/ph_results/aspiralBdef.obj
 !/data/ph_results/aspiralBdef.out.obj
 !/data/ph_results/aspiralBdef.out_d_p.obj
@@ -236,3 +237,5 @@ CHECKLIST.md
 !/data/THlmeshes_input/PH/*.obj
 /data/THlmeshes_input/PH/*.out.obj
 /data/THlmeshes_input/PH/*.out_d_p2.obj
+# tl_mesh_lab inputs: triangle meshes
+!/data/THlmeshes_input/TL/*.obj
